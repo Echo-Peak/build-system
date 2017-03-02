@@ -1,0 +1,118 @@
+system:
+  socket: true
+  port: 5100
+  frontPort: 5108
+  forkable: true
+  processName: starter-kit
+  argParser: true
+  allowChildOutput: true
+  beep: true
+  history: true
+  autoRecover: true
+gulp:
+  mainTask: init
+  socket: true
+  tasks:
+    scss:
+      before: imdone
+      after: exit
+      name: styles.css
+      runOnStart: true
+      concat: true
+      dest: ./out
+      paths: 
+        - ./tests/*.scss
+      watch: true  
+    jadeify:
+      # before: imdone
+     # after: imdone
+      concat: false
+      when: 'some condition'
+      watch: true
+      runOnStart: true
+      dest: ./out
+      paths: 
+        - ./tests/*.jade
+        
+
+processes: # default bin = node
+  food:
+    enable: true
+    socket: true
+    stdout: true
+    stderr: true
+    script: ./scripts/binary-proxy.js
+  backup:
+    runOnStart: false
+    enable: false
+    src: ./
+    dest: ./backup
+    every: 60 
+    script: ./scripts/backup.js
+  firebase:
+    runOnStart: false
+    enable: false
+    databaseURL: http://someurl.com
+    serviceKey: ./admin.json
+    workspace: ./DB
+    use: json
+    script: ./scripts/firebase-client.js
+  database:
+    enable: false
+    use: mongo-db
+    url: http://someurl
+    db:  defaultDB
+    port: 27527
+    script: ./some/path/file.js
+
+  webpack:
+    enable: false
+    runOnStart: true
+    socket: true
+    bin: webpack
+    node_modules: false
+    fileTypes:
+      - jsx
+      - js
+    mode: node
+    entry: ./entry.js
+    output: './out'
+    filename: '[name].js'
+    resolve:
+      modulesDirectories:
+        - node_modules
+      ext:
+        - js
+        - jsx
+        - json  
+    directorys:
+      - ./components
+    loaders:
+      javascript:
+        test: jsx js
+        include: $dir/src
+        loader: babel
+        config:
+          presets:
+            - es2015
+            - react
+            - stage-0
+          plugins: 
+            - transform-es2015-modules-commonjs
+            - transform-decorators-legacy
+            - transform-class-properties
+
+    vendors:
+      - react
+      - react-dom
+    plugins:
+      - OccurrenceOrderPlugin
+      - UglifyJsPlugin
+  testing:
+    runOnStart: true
+    enable: true
+    socket: false
+    watch: true
+    use: mocha
+    assertion: chai
+    script: ./tests

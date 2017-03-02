@@ -1,0 +1,8 @@
+webpack-main:
+  enable: true
+  runOnStart: true
+  cwd: 
+  script: ./webpack-main.js
+  socket: true
+  bin: webpack
+  globalBin: true # this will use the npm global binary 
