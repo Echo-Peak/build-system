@@ -29,9 +29,10 @@ module.exports = class AppRepl {
       processList: new Set(),
       gulpTasks: new Set()
     }
+    this.current = () => AppRepl._current;
     let daemonType = config.system.socket ? 'socket' : 'process';
 
-    DaemonManager.use(daemonType , config);
+    DaemonManager.use(daemonType , config , this.current);
 
     AppRepl.cwd = process.cwd();
     this.commandList = commandList;
@@ -48,7 +49,6 @@ module.exports = class AppRepl {
     this.forceKiller = null;
     this.exiting = false;
     this.exitTrys = 1;
-    this.current = () => AppRepl._current;
 
     this.paths = {
       userScripts: path.resolve(__dirname , '../user-scripts'),

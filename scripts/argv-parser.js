@@ -3,7 +3,7 @@
  * usage
  * keypair converts key:value into {key:value}
  * let argv = new ArgParser(<keypairPrefix>, <return process.argv bool>).build(<process.argv>)
- * 
+ *
  * argv = new ArgParser('--',true).build(process.argv)
  */
 module.exports = class ArgParser{
@@ -26,15 +26,16 @@ module.exports = class ArgParser{
   }
   build(argv){
     let result = {}
-    let startWith = new RegExp(`^${this.prefixString}`)
+    let startWith = new RegExp(`^(${this.prefixString})`)
     let keypair = new RegExp(this.prefixString + this.regex.keypair ,'gi');
     let newArgv = argv.join(' ').match(keypair);
-    
+
     if(!newArgv){
       return {_argv:argv}
     }
     newArgv.reduce((start ,item) =>{
       let i = item.replace(startWith ,'').split(this.regex.split);
+
       if(i[1] === 'true' || i[1] === 'false'){
         start[i[0]] = JSON.parse(i[1]);
       }else if(i[1].match(/,/g)){

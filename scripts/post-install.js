@@ -9,7 +9,7 @@ const packageJSON = require('../package');
 let newConfig = {}
 
 console.log(`
- Configuration time! 
+ Configuration time!
  `.yellow);
 
 function mutateConfig(_path, value ,obj) {
@@ -52,7 +52,7 @@ questions.askMany({
 }, function(result){
     console.log('Configuation complete!'.green)
     console.log(result);
-    let keys = Object.keys(result)
+    let keys = Object.keys(result);
     keys.forEach(item => {
       console.log(item)
       let value = result[item];

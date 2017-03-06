@@ -1,3 +1,5 @@
+let colors = require('colors');
+
 module.exports = [
   {
     cmd: 'history [sessionID]', desc: `shows & loads repel history`,
@@ -48,5 +50,18 @@ module.exports = [
   {
     cmd: 'exit [force]', desc: `kills the repl, build process, and child processes`,
     callCommand: 'exit', options: []
+  },
+  {
+    cmd: 'webpack <action> [input] [params...]', desc: `runs a webpack enviroment`,
+    callCommand: 'runWebpack', options: [
+      {cmd:'use'.blue, desc:'loads a webpack.config file from /user-scripts'},
+      {cmd:'run'.blue, desc:`runs webpack-dynamic from '${`${'/user-scripts'.yellow}`}' useing the config from ${`${'/build-config.yml'}`}`},
+      {cmd:'list'.blue, desc:`Shows list of runnable found from ${'/user-scripts'.yellow}`},
+      {cmd:'watch'.green, desc:'toggle file watching'},
+      {cmd:'-env, --enviroment'.green, desc:'sets webpack-enviroment'},
+      {cmd:'-e, --entry'.green, desc:'select entry path'},
+      {cmd:'-o, --output'.green, desc:'select output path'},
+      {cmd:'-s, --shell', desc:'spawns webpack instance in new shell'},
+    ]
   }
 ]

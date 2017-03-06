@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Hello world</title>
+    <script type="text/javascript" src='https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.js'>
+
+    </script>
+  </head>
+  <body>
+
+<h1>has</h1>
+<script type="text/javascript">
+  let i = io.connect('http://localhost:7500');
+  i.emit('foobar' ,{pasdi:273});
+  i.on('connect' ,function(){
+    console.log('connected');
+  })
+</script>
+  </body>
+</html>

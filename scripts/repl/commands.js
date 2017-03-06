@@ -4,6 +4,10 @@ const showStatistics = require('./heap-stats');
 const colors = require('colors');
 const path = require('path');
 const socketIOClient =require('socket.io-client');
+const webpack_commands = require('./commands/webpack');
+const gulp_commands = require('./commands/gulp');
+const system_commands = require('./commands/system');
+
 let ProcessWrapper = require('./process-wrapper');
 
 let regex = {
@@ -21,6 +25,13 @@ module.exports = class Commands {
   static refresh(processName){
     vorpal.delimiter(`${`${processName}>`.magenta} `).show();
   }
+  static bindClass(fn ,context){
+    let f = new fn();
+    let prototype = Object.getOwnPropertyNames(f.__proto__).filter(e => e !== 'constructor');
+    prototype.forEach((prop)=>{
+        this.prototype[prop] = f.__proto__[prop].bind(context);
+    })
+}
   constructor(parent , commandList) {
     this.self = parent;
     this.Parent = parent;
@@ -36,7 +47,14 @@ module.exports = class Commands {
     this.kill = this.kill;
     this.stats = this.stats;
     this.exiting = false;
+    this.vorpal = vorpal;
     this.socket = socketIOClient.connect(`http://localhost:${this.self._config.system.port}`);
+    //---------
+    // bindings!!
+    Commands.bindClass(webpack_commands , this);
+    Commands.bindClass(gulp_commands , this);
+    Commands.bindClass(system_commands , this);
+    //---------
     this.socket.on('update-vorpal' ,()=>{
       vorpal.delimiter(`${`${this.self._config.system.processName}>`.magenta} `).show();
     });
@@ -51,13 +69,16 @@ module.exports = class Commands {
         }else{
           method.call(self, args , command)
           .then(callback)
-          .catch(err => console.log(err), callback())
+          .catch(err => (console.log(err), callback()))
         }
       }
     }
 
-    commandList.forEach((cmd) => {
+    let c = 0;
+    commandList.forEach((cmd ,i ,arr) => {
        let shortCmd = cmd.cmd.split(' ');
+       c += 1;
+       //console.log(i,  arr.length)
        if(cmd.disabled){
 
          //console.log(`Command ${`${shortCmd[0]}`.yellow} is disabled!`)
@@ -68,7 +89,12 @@ module.exports = class Commands {
        cmd.options &&  cmd.options.forEach(option => command.option(option.cmd , option.desc));
         command.action(setupAction(this[cmd.callCommand] , command));
        }
+      if(c > arr.length -1){
+        this.socket.emit('vorpal-ready');
+      }
     });
+
+
     //Commands.refresh(this.self._config.system.processesName);
   }
   stats(args){
@@ -80,36 +106,7 @@ module.exports = class Commands {
        })
     });
   }
-  gulpStream(args , command){
-    let validate = (_path , reject) => {
-      let x = _path.match(regex.glob);
-      return x ? x[0] : reject('invalid file glob')
-    }
-    return new Promise((resolve , reject)=>{
-      let src = validate(args.src);
-      let dest = validate(args.dest);
-      console.log('Prepareing gulp stream!'.green);
-      this.self.getFunctionality('gulpStreamAdaptor').prepare(src ,dest , args.tasks)
-      resolve()
-    });
-  }
-  gulp(args){
-    let run = args.method && args.method.toLowerCase() === 'run';
-    let stop = args.method && args.method.toLowerCase() === 'stop';
 
-    return new Promise((resolve , reject)=>{
-      if(!run && !stop){
-        console.log(`gulp tasks available to ${'run'.yellow} or ${'stop'.yellow}`);
-        let tasks = Object.keys(this.self._config.gulp.tasks);
-        if(tasks.length){
-          console.log(prettyjson.render(tasks))
-        }else{
-          console.log('No tasks to list'.yellow)
-        }
-      }
-      resolve()
-    })
-  }
   history(args){
     let sessionID = args.sessionID && args.sessionID;
 
@@ -127,78 +124,7 @@ module.exports = class Commands {
       resolve()
     });
   }
-  killPID(pid) {
-    let current = this.self.getCurrent;
-    return new Promise((resolve, reject) => {
 
-      try {
-        pid = Number(pid);
-        if (isNaN(pid)) throw 'invalid PID'
-      } catch (err) {
-        reject('invalid PID')
-        return
-      }
-      let getTarget = current.running.filter(e => e.pid === pid);
-      if (getTarget.length) {
-        if (process.platform === 'win32') {
-          child_process.exec(`taskkill /pid ${pid} /f`, (stderr, stdout) => {
-            if (stderr) {
-              console.log(stderr);
-            }
-            console.log(`killed ${pid.toString().yellow}!`)
-            let copy = Object.assign({} ,current);
-            copy.running = copy.running.filter(e => e.pid !== pid);
-
-            this.self.setCurrent  = copy;
-          });
-        }
-
-      } else {
-        console.log(`no running process with PID: ${pid.toString().yellow}`);
-      }
-    });
-  }
-  kill(args) {
-    let pid = args.pid;
-    return new Promise((resolve, reject) => {
-      if (args.processesName) {
-        let name = args.processesName[0].toLowerCase();
-        let pid = args.processesName[1];
-        if (name === 'pid' && typeof pid === number) {
-          this.killPID(pid);
-        } else if (name.length && name !== 'pid') {
-          let getTargets = this.current.running.filter(e => e.name === name);
-          getTargets.forEach(e => this.killProcess(e.name, e.id));
-        }
-      } else {
-        reject(`you must specify a ${'pid'.yellow} to kill or a ${'process name'.yellow}. see ${'app'.cyan}`)
-      }
-
-      resolve();
-    });
-  }
-  killProcess(args) {
-    let processName = args.processName;
-    let id = args.id;
-    let current = this.self.getCurrent;
-
-    return new Promise((resolve, reject) => {
-      console.log(`Error occured`.red, `${processName} crashed!`);
-
-      let getRunning = current.running.filter(e => e.id === id);
-      getRunning.close && getRunning.close();
-      let copy = Object.assign({}, current);
-      copy.running = copy.running.filter(e => e.id !== id);
-      this.self.setCurrent = copy;
-      if (this.config.system.autoRecover) {
-        setTimeout(() => {
-          console.log(`Restarting ${processName}`.green);
-          this.run(processName);
-        }, 5000)
-      }
-      resolve()
-    });
-  }
   cd(args) {
     let input = args.newDirectory;
     return new Promise((resolve, reject) => {
@@ -221,29 +147,6 @@ module.exports = class Commands {
       }
       resolve();
     });
-  }
-  onprocessExit(args){
-
-    if(this.exiting){
-      console.log('waiting!...'.yellow)
-      return
-    }
-    let force = args && args.force && args.force.toLowerCase() === 'force';
-
-
-      this.self.getFunctionality('IO').
-      updateHistory(vorpal.cmdHistory._hist)
-      .then(()=>{
-        console.log('exiting');
-        this.Parent.exit(force);
-        this.exiting = true;
-      })
-      .catch((err)=>{
-        console.log(err , 'there was a error')
-        this.Parent.exit(force);
-        this.exiting = true;
-
-      })
   }
   exit(args) {
     let force = args && args.force;

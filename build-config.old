@@ -1,12 +1,12 @@
 system:
   socket: true
-  port: 7500
-  frontPort: 7200
+  port: s
+  frontPort: '7100'
   forkable: true
-  processName: starter-KIT
+  processName: 'y'
   argParser: true
   allowChildOutput: true
-  beep: true
+  beep: 'n'
   history: false
   autoRecover: true
 gulp:
